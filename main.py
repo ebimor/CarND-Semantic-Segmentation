@@ -32,17 +32,17 @@ def load_vgg(sess, vgg_path):
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
-    
+
     model = tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
-    
+
     graph = tf.get_default_graph()
-    
+
     w1 = graph.get_tensor_by_name(vgg_input_tensor_name)
     keep_prob = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
     layer3_out = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
     layer4_out = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
     layer7_out = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
-    
+
     return w1, keep_prob, layer3_out, layer4_out, layer7_out
 tests.test_load_vgg(load_vgg, tf)
 
@@ -55,13 +55,13 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    
+
     L2_REG = 1e-5
     STDEV = 1e-2
     # TODO: Implement function
-    # Thanks to Subodh Malgode for the gradient tip (Slack) 
-    
-    # Freezing the gradients 
+    # Thanks to Subodh Malgode for the gradient tip (Slack)
+
+    # Freezing the gradients
     #vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
     #vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
     #vgg_layer7_out = tf.stop_gradient(vgg_layer7_out)
@@ -71,57 +71,57 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # Apply 1x1 convolution in place of fully connected layer
     fcn8 = tf.layers.conv2d(
-        layer7, 
-        filters=num_classes, 
-        kernel_size=1, 
-        padding='SAME', 
-        kernel_initializer=tf.random_normal_initializer(stddev=STDEV), 
-        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG), 
+        layer7,
+        filters=num_classes,
+        kernel_size=1,
+        padding='SAME',
+        kernel_initializer=tf.random_normal_initializer(stddev=STDEV),
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG),
         name="fcn8")
 
     # Upsample fcn8 with size depth=(4096?) to match size of layer 4 so that we can add skip connection with 4th layer
     fcn9 = tf.layers.conv2d_transpose(
-        fcn8, 
-        filters=num_classes, 
-        kernel_size=4, 
-        strides=(2, 2), 
-        padding='SAME', 
+        fcn8,
+        filters=num_classes,
+        kernel_size=4,
+        strides=(2, 2),
+        padding='SAME',
         kernel_initializer=tf.random_normal_initializer(stddev=STDEV),
         kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG),
         name="fcn9")
 
     # apply 1x1 conv to the output of layer 4
     fcn4 = tf.layers.conv2d(
-        layer4, 
-        filters=num_classes, 
-        kernel_size=1, 
-        padding='SAME', 
-        kernel_initializer=tf.random_normal_initializer(stddev=STDEV), 
-        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG), 
+        layer4,
+        filters=num_classes,
+        kernel_size=1,
+        padding='SAME',
+        kernel_initializer=tf.random_normal_initializer(stddev=STDEV),
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG),
         name="fcn4")
-    
+
     # Add a skip connection between current final layer fcn8 and 4th layer
     fcn9_skip_connected = tf.add(fcn9, fcn4, name="fcn9_plus_vgg_layer4")
 
     # Upsample again
     fcn10 = tf.layers.conv2d_transpose(
-        fcn9_skip_connected, 
+        fcn9_skip_connected,
         filters=num_classes,
-        kernel_size=4, 
-        strides=(2, 2), 
+        kernel_size=4,
+        strides=(2, 2),
         padding='SAME',
         kernel_initializer=tf.random_normal_initializer(stddev=STDEV),
-        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG), 
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG),
         name="fcn10_conv2d")
-    
+
     # apply 1x1 conv to the output of layer 3
     fcn3 = tf.layers.conv2d(
-        layer3, 
-        filters=num_classes, 
-        kernel_size=1, 
-        padding='SAME', 
-        kernel_initializer=tf.random_normal_initializer(stddev=STDEV), 
-        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG), 
+        layer3,
+        filters=num_classes,
+        kernel_size=1,
+        padding='SAME',
+        kernel_initializer=tf.random_normal_initializer(stddev=STDEV),
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG),
         name="fcn3")
 
     # Add skip connection
@@ -129,21 +129,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # Upsample again
     fcn11 = tf.layers.conv2d_transpose(
-        fcn10_skip_connected, 
+        fcn10_skip_connected,
         filters=num_classes,
-        kernel_size=16, 
-        strides=(8, 8), 
-        padding='SAME', 
+        kernel_size=16,
+        strides=(8, 8),
+        padding='SAME',
         name="fcn11")
 
     return fcn11
-    
+
     #return nn_last_layer
 tests.test_layers(layers)
 
 
 def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
-  
+
   # Reshape 4D tensors to 2D, each row represents a pixel, each column a class
   logits = tf.reshape(nn_last_layer, (-1, num_classes), name="fcn_logits")
   correct_label_reshaped = tf.reshape(correct_label, (-1, num_classes))
@@ -197,7 +197,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 def run():
     num_classes = 2
     image_shape = (160, 576)
-    data_dir = ''
+    data_dir = './data'
     runs_dir = './runs'
 
     print("testing the dataset")
@@ -224,7 +224,7 @@ def run():
         # TODO: Build NN using load_vgg, layers, and optimize function
         epochs = 50
         batch_size = 8
-        
+
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
