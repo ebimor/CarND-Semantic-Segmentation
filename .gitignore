@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.zip
 
 # C extensions
 *.so
@@ -100,4 +101,8 @@ ENV/
 # mypy
 .mypy_cache/
 
-RUNS/
+runs/
+saved_models/
+data/
+data_city/
+

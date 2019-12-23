@@ -1,14 +1,9 @@
-'''
-You should not edit project_tests.py as part of your submission.
-
-This file is used for unit testing your work within main.py.
-'''
-
 import sys
 import os
 from copy import deepcopy
 from glob import glob
 from unittest import mock
+# import mock
 
 import numpy as np
 import tensorflow as tf
@@ -28,23 +23,12 @@ def test_safe(func):
 
 
 def _prevent_print(function, params):
-    """
-    Prevent print statements for a given function
-    :param function: The function in which to repress any prints to the terminal
-    :param params: Parameters to feed into function
-    """
     sys.stdout = open(os.devnull, "w")
     function(**params)
     sys.stdout = sys.__stdout__
 
 
 def _assert_tensor_shape(tensor, shape, display_name):
-    """
-    Check whether the tensor and another shape match in shape
-    :param tensor: TF Tensor
-    :param shape: Some array
-    :param display_name: Name of tensor to print if assertions fail
-    """
     assert tf.assert_rank(tensor, len(shape), message='{} has wrong rank'.format(display_name))
 
     tensor_shape = tensor.get_shape().as_list() if len(shape) else []
@@ -74,11 +58,6 @@ class TmpMock(object):
 
 @test_safe
 def test_load_vgg(load_vgg, tf_module):
-    """
-    Test whether `load_vgg()` is correctly implemented, based on layers 3, 4 and 7.
-    :param load_vgg: A function to load vgg layers 3, 4 and 7.
-    :param tf_module: The tensorflow module import
-    """
     with TmpMock(tf_module.saved_model.loader, 'load') as mock_load_model:
         vgg_path = ''
         sess = tf.Session()
@@ -104,10 +83,6 @@ def test_load_vgg(load_vgg, tf_module):
 
 @test_safe
 def test_layers(layers):
-    """
-    Test whether `layers()` function is correctly implemented.
-    param: layers: An implemented `layers()` function with deconvolutional layers in a FCN.
-    """
     num_classes = 2
     vgg_layer3_out = tf.placeholder(tf.float32, [None, None, None, 256])
     vgg_layer4_out = tf.placeholder(tf.float32, [None, None, None, 512])
@@ -119,11 +94,6 @@ def test_layers(layers):
 
 @test_safe
 def test_optimize(optimize):
-    """
-    Test whether the `optimize()` function correctly creates logits and the training optimizer.
-    If the optimize is not set correctly, training will fail to update weights.
-    :param optimize: An implemented `optimize()` function.
-    """
     num_classes = 2
     shape = [2, 3, 4, num_classes]
     layers_output = tf.Variable(tf.zeros(shape))
@@ -143,15 +113,11 @@ def test_optimize(optimize):
 
 @test_safe
 def test_train_nn(train_nn):
-    """
-    Test whether the `train_nn()` function correctly begins training a neural network on simple data.
-    :param train_nn: An implemented `train_nn()` function.
-    """
     epochs = 1
     batch_size = 2
 
-    def get_batches_fn(batch_size_param):
-        shape = [batch_size_param, 2, 3, 3]
+    def get_batches_fn(batach_size_parm):
+        shape = [batach_size_parm, 2, 3, 3]
         return np.arange(np.prod(shape)).reshape(shape)
 
     train_op = tf.constant(0)
@@ -177,10 +143,6 @@ def test_train_nn(train_nn):
 
 @test_safe
 def test_for_kitti_dataset(data_dir):
-    """
-    Test whether the KITTI dataset has been downloaded, and whether the full, correct dataset is present.
-    :param data_dir: Directory where the KITTI dataset was downloaded into.
-    """
     kitti_dataset_path = os.path.join(data_dir, 'data_road')
     training_labels_count = len(glob(os.path.join(kitti_dataset_path, 'training/gt_image_2/*_road_*.png')))
     training_images_count = len(glob(os.path.join(kitti_dataset_path, 'training/image_2/*.png')))
@@ -188,23 +150,6 @@ def test_for_kitti_dataset(data_dir):
 
     assert not (training_images_count == training_labels_count == testing_images_count == 0),\
         'Kitti dataset not found. Extract Kitti dataset in {}'.format(kitti_dataset_path)
-    assert training_images_count == 289, 'Expected 289 training images, found {} images.'.format(training_images_count)
-    assert training_labels_count == 289, 'Expected 289 training labels, found {} labels.'.format(training_labels_count)
-    assert testing_images_count == 290, 'Expected 290 testing images, found {} images.'.format(testing_images_count)
-
-@test_safe
-def test_for_cityScape_dataset(data_dir_cityScape):
-    """
-    Test whether the cityScape dataset has been downloaded, and whether the full, correct dataset is present.
-    :param data_dir_cityScape: Directory where the cityScape dataset was downloaded into.
-    """
-    cityScape_dataset_path = os.path.join(data_dir_cityScape, 'data_road')
-    training_labels_count = len(glob(os.path.join(cityScape_dataset_path, 'training/gt_image_2/*_road_*.png')))
-    training_images_count = len(glob(os.path.join(cityScape_dataset_path, 'training/image_2/*.png')))
-    testing_images_count = len(glob(os.path.join(cityScape_dataset_path, 'testing/image_2/*.png')))
-
-    assert not (training_images_count == training_labels_count == testing_images_count == 0),\
-        'cityScape dataset not found. Extract cityScape dataset in {}'.format(cityScape_dataset_path)
     assert training_images_count == 289, 'Expected 289 training images, found {} images.'.format(training_images_count)
     assert training_labels_count == 289, 'Expected 289 training labels, found {} labels.'.format(training_labels_count)
     assert testing_images_count == 290, 'Expected 290 testing images, found {} images.'.format(testing_images_count)
