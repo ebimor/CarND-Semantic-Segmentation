@@ -1,7 +1,7 @@
 import cv2
 import os
 
-image_folder = './runs/1576876165.9698215'
+image_folder = './runs/1577150363.135101'
 video_name = image_folder+'/'+'video.mp4'
 
 images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
